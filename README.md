@@ -20,8 +20,8 @@ This is a simple self-checkout system built with Python, using the `Tkinter` lib
    First, clone the repository to your local machine:
 
    ```bash
-   git clone https://github.com/your-username/self-checkout-machine.git
-   cd self-checkout-machine
+   https://github.com/kelvinnseth/Self_checkout_project.git
+   cd Self_checkout_project
    ```
 
 2. **Install Dependencies**
