@@ -95,11 +95,7 @@ This is a simple self-checkout system built with Python, using the `Tkinter` lib
 - Enhancing the receipt generation to include more details.
 - Adding a login system to support multiple users.
 
-## License
 
-This project is licensed under the MIT License.
-
----
 
 Feel free to raise any issues or contribute to the project on GitHub!
 
