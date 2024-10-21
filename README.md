@@ -1,101 +1,123 @@
-# Self Checkout Machine - Python GUI Application
+# Self-Checkout System
 
-This is a simple self-checkout system built with Python, using the `Tkinter` library for the graphical user interface (GUI) and `psycopg2` to interact with a PostgreSQL database. The application allows users to search for products, add them to a shopping basket, manage the basket, set their balance, and pay for items. A receipt is generated after payment.
+A comprehensive self-checkout system built with Python, utilizing the `Tkinter` library for the graphical user interface (GUI) and `psycopg2` to interact with a PostgreSQL database. This application provides a user-friendly interface for customers to search products, manage their shopping basket, set their balance, and complete transactions.
+
+## Table of Contents
+1. [Features](#features)
+2. [System Architecture](#system-architecture)
+3. [Database Design](#database-design)
+4. [Installation and Setup](#installation-and-setup)
+5. [Usage](#usage)
+6. [Code Structure](#code-structure)
+7. [Future Enhancements](#future-enhancements)
 
 ## Features
 
-- **Search Products**: Search for products stored in a PostgreSQL database.
-- **Add to Basket**: Add selected products to the basket.
-- **Remove from Basket**: Remove selected products from the basket.
-- **Display Basket**: Shows current items in the basket and total price.
-- **User Balance**: Allows the user to input a balance and deducts the total cost of items purchased.
-- **Pay for Items**: Check if the user has sufficient funds to pay and generate a receipt after the transaction.
-- **Receipt Generation**: A receipt containing details of the transaction is generated and printed.
-- **PostgreSQL Integration**: Data is stored and fetched from a PostgreSQL database.
+- **Product Search**: Users can search for products stored in the PostgreSQL database.
+- **Basket Management**: Add products to the basket, remove items, and view the current basket contents.
+- **Balance Management**: Set and track user balance for transactions.
+- **Transaction Processing**: Complete purchases and generate receipts.
+- **Database Integration**: All product and transaction data is stored and retrieved from a PostgreSQL database.
+- **Category Management**: Products are organized into categories for easier navigation.
+- **User Authentication**: (Planned feature) Support for user accounts and authentication.
+
+## System Architecture
+
+The Self-Checkout System consists of two main components:
+
+1. **Frontend**: A Python application using Tkinter for the graphical user interface.
+2. **Backend**: A PostgreSQL database for storing product, transaction, and user data.
+
+The system uses `psycopg2` to establish a connection between the frontend and the database.
+
+## Database Design
+
+### Schema
+
+The database includes the following tables:
+
+- `products`: Stores product information (id, name, description, price, quantity, category_id).
+- `categories`: Stores product categories (id, name, description).
+- `transactions`: Records completed transactions (id, total_amount, payment_method, transaction_date).
+- `transaction_items`: Links transactions to specific products (id, transaction_id, product_id, quantity, price_at_purchase).
+- `users`: Stores user information for future authentication features (id, username, password_hash, email).
+
+### Relationships
+
+- Products belong to Categories (Many-to-One)
+- Transaction Items belong to Transactions (Many-to-One)
+- Transaction Items reference Products (Many-to-One)
+
+### Optimizations
+
+- Indexes on frequently queried columns (e.g., product name, transaction date)
+- Connection pooling for efficient database connections
 
 ## Installation and Setup
 
 1. **Clone the Repository**
-
-   First, clone the repository to your local machine:
-
    ```bash
-   https://github.com/kelvinnseth/Self_checkout_project.git
+   git clone https://github.com/kelvinnseth//Self_checkout_project.git
    cd Self_checkout_project
    ```
 
 2. **Install Dependencies**
-
-   Ensure you have the required Python packages installed:
-
    ```bash
-   pip install psycopg2
+   pip install psycopg2 tkinter
    ```
 
 3. **Set up PostgreSQL Database**
-
-   Create a PostgreSQL database named `products` and set up the following schema by running the provided Python script.
-
-   Use the following SQL schema for your database:
-
-   ```sql
-   CREATE TABLE IF NOT EXISTS products (
-       id SERIAL PRIMARY KEY,
-       name VARCHAR(100),
-       description VARCHAR(255),
-       price DECIMAL(10, 2),
-       quantity INTEGER
-   );
-
-   CREATE TABLE IF NOT EXISTS transactions (
-       transaction_id SERIAL PRIMARY KEY,
-       transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-       total_amount DECIMAL(10, 2)
-   );
-   ```
+   - Install PostgreSQL if not already installed
+   - Create a new database named `self_checkout_db`
+   - Run the SQL scripts provided in `database/schema.sql` to create the necessary tables and indexes
 
 4. **Configure Database Connection**
-
-   Update the PostgreSQL connection details in the Python script (`host`, `user`, `password`, `dbname`, `port`) according to your setup:
-
+   Update the `config.py` file with your PostgreSQL credentials:
    ```python
-   conn = psycopg2.connect(
-       dbname="products",
-       user="postgres",
-       password="YourDatabasePassword",
-       host="localhost",
-       port="5432"
-   )
+   DB_CONFIG = {
+       "dbname": "self_checkout_db",
+       "user": "your_username",
+       "password": "your_password",
+       "host": "localhost",
+       "port": "5432"
+   }
    ```
 
 5. **Run the Application**
-
-   After setting up the database, run the application:
-
-   ```bash
+   ```
    python self_checkout.py
    ```
 
 ## Usage
 
-1. **Search Products**: Use the search bar to find products stored in the database.
-2. **Add to Basket**: After searching, click on "Add to Basket" to add the first search result to your shopping basket.
-3. **View and Manage Basket**: Your basket and total price will be displayed in the right-hand section. Use the "Remove Item" button to delete items from the basket.
-4. **Set Balance**: Enter your available balance and click "Set Balance".
-5. **Pay**: After adding items to the basket, click on "Pay" to complete the transaction. If your balance is sufficient, a receipt will be displayed.
+1. **Search for Products**: Enter a product name or category in the search bar and click "Search".
+2. **Add to Basket**: Select a product from the search results and click "Add to Basket".
+3. **Manage Basket**: View your current basket on the right side of the application. Use "Remove Item" to remove products.
+4. **Set Balance**: Enter your available balance in the "Set Balance" field and click the button to update.
+5. **Complete Transaction**: Click "Pay" to process the transaction. If successful, a receipt will be generated and displayed.
 
-## Project Structure
+## Code Structure
 
-- `self_checkout.py`: Main Python script containing the GUI logic and database interactions.
-- `README.md`: Instructions for setting up and running the project.
+- `self_checkout.py`: Main application file containing the GUI and core functionality.
+- `database/`: Directory containing database-related files.
+  - `schema.sql`: SQL file with table definitions and indexes.
+  - `connection.py`: Handles database connection and connection pooling.
+- `config.py`: Configuration file for database credentials and other settings.
+- `utils/`: Directory for utility functions.
+  - `product_utils.py`: Functions for product-related operations.
+  - `transaction_utils.py`: Functions for transaction-related operations.
 
 ## Future Enhancements
 
-- Implementing product categories and filtering.
-- Enhancing the receipt generation to include more details.
-- Adding a login system to support multiple users.
+1. Implement user authentication and personalized shopping experiences.
+2. Add a graphical representation of products, including images.
+3. Implement inventory management to update product quantities after purchases.
+4. Create an admin interface for managing products, categories, and viewing transaction histories.
+5. Implement a loyalty program and special offers system.
+6. Add support for multiple payment methods (credit cards, mobile payments).
+7. Develop a reporting system for sales analytics and inventory tracking.
 
+## Contributing
 
-
-Feel free to raise any issues or contribute to the project on GitHub!
+Contributions to the Self-Checkout System are welcome! Please feel free to submit a Pull Request.
 
