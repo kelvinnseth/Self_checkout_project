@@ -8,8 +8,8 @@ A comprehensive self-checkout system built with Python, utilizing the `Tkinter` 
 3. [Database Design](#database-design)
 4. [Installation and Setup](#installation-and-setup)
 5. [Usage](#usage)
-6. [Code Structure](#code-structure)
-7. [Future Enhancements](#future-enhancements)
+
+6. [Future Enhancements](#future-enhancements)
 
 ## Features
 
@@ -96,16 +96,6 @@ The database includes the following tables:
 4. **Set Balance**: Enter your available balance in the "Set Balance" field and click the button to update.
 5. **Complete Transaction**: Click "Pay" to process the transaction. If successful, a receipt will be generated and displayed.
 
-## Code Structure
-
-- `self_checkout.py`: Main application file containing the GUI and core functionality.
-- `database/`: Directory containing database-related files.
-  - `schema.sql`: SQL file with table definitions and indexes.
-  - `connection.py`: Handles database connection and connection pooling.
-- `config.py`: Configuration file for database credentials and other settings.
-- `utils/`: Directory for utility functions.
-  - `product_utils.py`: Functions for product-related operations.
-  - `transaction_utils.py`: Functions for transaction-related operations.
 
 ## Future Enhancements
 
