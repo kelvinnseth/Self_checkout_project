@@ -2,29 +2,35 @@
 import psycopg2  # Library to connect and interact with PostgreSQL
 from tkinter import *  # Import all from tkinter for GUI elements
 from tkinter import ttk  # Import ttk for themed widgets
+from tkinter import messagebox  # Import messagebox for error messages
 
 # Function to create the database table if it doesn't exist
 def create_database_table():
-    conn = psycopg2.connect(
-        dbname="products",
-        user="postgres",
-        password="Target@database",
-        host="localhost",
-        port="5432"
-    )
-    cur = conn.cursor()
-    # SQL query to create a table if it does not exist already
-    cur.execute(""" 
-                CREATE TABLE IF NOT EXISTS products (
-                    id SERIAL PRIMARY KEY,
-                    name VARCHAR(100),
-                    description VARCHAR(255),
-                    price DECIMAL(10, 2),
-                    quantity INTEGER
-                );
-            """)
-    conn.commit()
-    conn.close()
+    try:
+        conn = psycopg2.connect(
+            dbname="products",
+            user="postgres",
+            password="Target@database",
+            host="localhost",
+            port="5432"
+        )
+        cur = conn.cursor()
+        # SQL query to create a table if it does not exist already
+        cur.execute(""" 
+                    CREATE TABLE IF NOT EXISTS products (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR(100),
+                        description VARCHAR(255),
+                        price DECIMAL(10, 2),
+                        quantity INTEGER
+                    );
+                """)
+        conn.commit()
+    except Exception as e:
+        print(f"Error creating database table: {e}")
+    finally:
+        cur.close()  # Ensure cursor is closed
+        conn.close()  # Ensure connection is closed
 
 # Class for the Self Checkout application (inherits from Tk)
 class Self_checkout(Tk):
@@ -61,8 +67,6 @@ class Self_checkout(Tk):
         self.frame_display = ttk.Frame()
         self.frame_display.grid(row=0, column=3, sticky="ns")
 
-
-
         # Label to show current basket items
         self.basket_label = ttk.Label(self.frame_display, style="Custom.TLabel", text="Basket: []", width=40)
         self.basket_label.grid(row=5, column=1, pady=30, padx=30, sticky="")
@@ -74,7 +78,6 @@ class Self_checkout(Tk):
         # Button to remove an item from the basket
         self.remove_button = ttk.Button(self.frame_display, text="Remove Item", command=self.remove_from_basket)
         self.remove_button.grid(row=6, column=5, padx=30, pady=10, sticky="ew")
-
 
         # Search Entry
         self.search_entry = ttk.Entry(self.frame, style="Custom.TEntry", font=('Arial', 12))
@@ -92,21 +95,10 @@ class Self_checkout(Tk):
         self.add_to_basket_button = ttk.Button(self.frame_display, text="Add to Basket", command=self.add_to_basket)
         self.add_to_basket_button.grid(row=4, column=1, padx=30, pady=10, sticky="ew")
 
-        # Label to show current basket items
-        self.basket_label = ttk.Label(self.frame_display, style="Custom.TLabel", text="Basket: []", width=40)
-        self.basket_label.grid(row=5, column=1, pady=30, padx=30, sticky="")
-
         # Label to show total price
         self.total_price_label = ttk.Label(self.frame_display, style="Custom.TLabel", text="Total Price: £0.00", width=40)
         self.total_price_label.grid(row=6, column=1, pady=30, padx=30, sticky="")
-        # Dropdown to select an item to remove
-        self.item_dropdown = ttk.Combobox(self.frame_display, textvariable=self.selected_item, width=40)
-        self.item_dropdown.grid(row=6, column=1, pady=10, padx=30, sticky="ew")
-
-        # Button to remove an item from the basket
-        self.remove_button = ttk.Button(self.frame_display, text="Remove Item", command=self.remove_from_basket)
-        self.remove_button.grid(row=7, column=1, padx=30, pady=10, sticky="ew")
-
+        
         # Balance Entry
         self.balance_entry = ttk.Entry(self.frame, style="Custom.TEntry", font=('Arial', 12))
         self.balance_entry.grid(row=2, column=1, padx=30, pady=10, sticky="ew")
@@ -126,46 +118,11 @@ class Self_checkout(Tk):
 
     def search_product(self):
         search_term = self.search_entry.get().strip()
+        if not search_term:
+            self.label.config(text="Please enter a search term.")
+            return
 
-        conn = psycopg2.connect(
-            dbname="products",
-            user="postgres",
-            password="Target@database",
-            host="localhost",
-            port="5432"
-        )
-        cur = conn.cursor()
-
-        # SQL query to search for items along with their prices
-        cur.execute("SELECT name, price FROM products WHERE name ILIKE %s;", ('%' + search_term + '%',))
-        self.results = cur.fetchall()  # Store the results for later use
-
-        if self.results:
-            # Format results into a string
-            result_text = "Found items:\n" + "\n".join([f"{item[0]} - £{item[1]:.2f}" for item in self.results])
-        else:
-            result_text = "No items found."
-
-        # Update the label to display results
-        self.label.config(text=result_text)
-
-        # Close the database connection
-        conn.close()
-
-    def update_basket_display(self):
-            # Update the basket label to show current items
-            basket_items = ', '.join([f"{item[0]}\n - £{item[1]:.2f}" for item in self.basket])
-            self.basket_label.config(text=f"Basket: [{basket_items}]")
-            self.total_price_label.config(text=f"Total Price: £{self.total_price:.2f}")
-
-            # Update the item dropdown with items in the basket
-            self.item_dropdown['values'] = [item[0] for item in self.basket]  # Populate dropdown with item names
-            self.selected_item.set('')  # Clear the selection
-
-    def remove_from_basket(self):
-        item_to_remove = self.selected_item.get()  # Get the selected item name
-
-        if item_to_remove:
+        try:
             conn = psycopg2.connect(
                 dbname="products",
                 user="postgres",
@@ -175,7 +132,50 @@ class Self_checkout(Tk):
             )
             cur = conn.cursor()
 
+            # SQL query to search for items along with their prices
+            cur.execute("SELECT name, price FROM products WHERE name ILIKE %s;", ('%' + search_term + '%',))
+            self.results = cur.fetchall()  # Store the results for later use
+
+            if self.results:
+                # Format results into a string
+                result_text = "Found items:\n" + "\n".join([f"{item[0]} - £{item[1]:.2f}" for item in self.results])
+            else:
+                result_text = "No items found."
+
+            # Update the label to display results
+            self.label.config(text=result_text)
+
+        except Exception as e:
+            self.label.config(text="Error searching for products.")
+            print(f"Error: {e}")
+        finally:
+            cur.close()  # Ensure cursor is closed
+            conn.close()  # Ensure connection is closed
+
+    def update_basket_display(self):
+        # Update the basket label to show current items
+        basket_items = ', '.join([f"{item[0]}\n - £{item[1]:.2f}" for item in self.basket])
+        self.basket_label.config(text=f"Basket: [{basket_items}]")
+        self.total_price_label.config(text=f"Total Price: £{self.total_price:.2f}")
+
+        # Update the item dropdown with items in the basket
+        self.item_dropdown['values'] = [item[0] for item in self.basket]  # Populate dropdown with item names
+        self.selected_item.set('')  # Clear the selection
+
+    def remove_from_basket(self):
+        item_to_remove = self.selected_item.get()  # Get the selected item name
+
+        if item_to_remove:
             try:
+                conn = psycopg2.connect(
+                    dbname="products",
+                    user="postgres",
+                    password="Target@database",
+                    host="localhost",
+                    port="5432"
+                )
+                cur = conn.cursor()
+
                 # Remove the selected item from the basket in the local list
                 for item in self.basket:
                     if item[0] == item_to_remove:
@@ -183,8 +183,8 @@ class Self_checkout(Tk):
                         self.total_price -= float(item[1])  # Adjust the total price
                         break
 
-                # SQL query to delete the selected item from the `todo` table
-                cur.execute("DELETE FROM todo WHERE list_item = %s;", (item_to_remove,))
+                # SQL query to delete the selected item from the `products` table
+                cur.execute("DELETE FROM products WHERE name = %s;", (item_to_remove,))
                 conn.commit()  # Commit the changes to the database
 
                 # Update the basket display after the item is removed
@@ -196,8 +196,8 @@ class Self_checkout(Tk):
                 self.label.config(text="Error removing item from basket.")
                 print(f"Error: {e}")
             finally:
-                cur.close()  # Close the cursor
-                conn.close()  # Close the connection
+                cur.close()  # Ensure cursor is closed
+                conn.close()  # Ensure connection is closed
         else:
             self.label.config(text="No item selected to remove!")
 
@@ -227,57 +227,68 @@ class Self_checkout(Tk):
             paid_amount = self.total_price  # Store total price before resetting it
 
             # Log the transaction and get the transaction ID and date
-            transaction_id, transaction_date = self.log_transaction(paid_amount)
+            transaction_record = self.log_transaction(paid_amount)
 
-            # Deduct total price from balance
-            self.user_balance -= paid_amount
-            self.balance_label.config(text=f"Balance: £{self.user_balance:.2f}")
-            self.basket.clear()
-            self.total_price = 0.0  # Reset total price after logging and deducting
+            if transaction_record:
+                transaction_id, transaction_date = transaction_record
 
-            self.update_basket_display()
+                # Deduct total price from balance
+                self.user_balance -= paid_amount
+                self.balance_label.config(text=f"Balance: £{self.user_balance:.2f}")
+                self.basket.clear()
+                self.total_price = 0.0  # Reset total price after logging and deducting
 
-            # Create the receipt string using `paid_amount` instead of `self.total_price`
-            receipt = f"Receipt\nTransaction ID: {transaction_id}\n"
-            receipt += f"Transaction Date: {transaction_date}\n"
-            receipt += "Items Purchased:\n"
-            for item, price in self.basket:
-                receipt += f"- {item}: £{price:.2f}\n"
-            receipt += f"Total Amount: £{paid_amount:.2f}\n"  # Use `paid_amount` here
-            receipt += "Thank you for your purchase!"
+                self.update_basket_display()
 
-            # Print the receipt to the console (or display it in the GUI)
-            print(receipt)  # Print receipt in the console
-            self.label.config(text=receipt)  # Display the receipt in the label widget
+                # Create the receipt string using `paid_amount` instead of `self.total_price`
+                receipt = f"Receipt\nTransaction ID: {transaction_id}\n"
+                receipt += f"Transaction Date: {transaction_date}\n"
+                receipt += "Items Purchased:\n"
+                for item, price in self.basket:
+                    receipt += f"- {item}: £{price:.2f}\n"
+                receipt += f"Total Amount: £{paid_amount:.2f}\n"  # Use `paid_amount` here
+                receipt += "Thank you for your purchase!"
 
+                # Print the receipt to the console (or display it in the GUI)
+                print(receipt)  # Print receipt in the console
+                self.label.config(text=receipt)  # Display the receipt in the label widget
+
+            else:
+                self.label.config(text="Error logging transaction!")
         else:
             self.label.config(text="Insufficient funds!")
 
-    def log_transaction(self,total_amount):
-        conn = psycopg2.connect(
-            dbname="products",
-            user="postgres",
-            password="Target@database",
-            host="localhost",
-            port="5432"
-        )
-        cur = conn.cursor()
+    def log_transaction(self, total_amount):
+        try:
+            conn = psycopg2.connect(
+                dbname="products",
+                user="postgres",
+                password="Target@database",
+                host="localhost",
+                port="5432"
+            )
+            cur = conn.cursor()
 
-        # SQL query to insert the transaction and return the transaction details
-        cur.execute("""
-            INSERT INTO transactions (total_amount) 
-            VALUES (%s)
-            RETURNING transaction_id, transaction_date;
-        """, (total_amount,))
+            # SQL query to insert the transaction and return the transaction details
+            cur.execute("""
+                INSERT INTO transactions (total_amount) 
+                VALUES (%s)
+                RETURNING transaction_id, transaction_date;
+            """, (total_amount,))
 
-        # Fetch the transaction ID and date after inserting
-        transaction_record = cur.fetchone()
+            # Fetch the transaction ID and date after inserting
+            transaction_record = cur.fetchone()
 
-        conn.commit()  # Commit the transaction
-        cur.close()  # Close the cursor
-        conn.close()  # Close the database connection
+            conn.commit()  # Commit the transaction
 
-        return transaction_record  # Return transaction ID and date
+            return transaction_record  # Return transaction ID and date
+
+        except Exception as e:
+            print(f"Error logging transaction: {e}")
+            return None  # Return None if an error occurs
+        finally:
+            cur.close()  # Ensure cursor is closed
+            conn.close()  # Ensure connection is closed
 
 
 # Create an instance of the Self_checkout class and run the app
